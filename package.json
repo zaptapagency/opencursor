@@ -1,0 +1,112 @@
+{
+  "name": "opencursor",
+  "displayName": "opencursor",
+  "description": "An AI coding agent for VS Code — chat, inline edit, agent mode, and codebase RAG.",
+  "version": "0.0.1",
+  "publisher": "opencursor",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "Machine Learning",
+    "Programming Languages",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      { "command": "opencursor.hello", "title": "opencursor: Hello" },
+      { "command": "opencursor.openChat", "title": "opencursor: Open Chat" },
+      { "command": "opencursor.inlineEdit", "title": "opencursor: Inline Edit (Cmd/Ctrl+K)" },
+      { "command": "opencursor.pickModel", "title": "opencursor: Select Model" },
+      { "command": "opencursor.setApiKey", "title": "opencursor: Set API Key" },
+      { "command": "opencursor.indexWorkspace", "title": "opencursor: Index Workspace" },
+      { "command": "opencursor.pingModel", "title": "opencursor: Ping Model (debug)" }
+    ],
+    "keybindings": [
+      {
+        "command": "opencursor.inlineEdit",
+        "key": "ctrl+k",
+        "mac": "cmd+k",
+        "when": "editorTextFocus && !editorReadonly"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "opencursor.inlineEdit",
+          "when": "editorTextFocus",
+          "group": "opencursor"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "opencursor",
+          "title": "opencursor",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "opencursor": [
+        {
+          "id": "opencursor.chat",
+          "name": "Chat",
+          "type": "webview"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "npm-run-all clean typecheck build:webview build:host lint",
+    "clean": "node ./scripts/clean.mjs",
+    "build:host": "node ./scripts/esbuild.mjs",
+    "build:webview": "vite build",
+    "watch:host": "node ./scripts/esbuild.mjs --watch",
+    "watch:webview": "vite build --watch",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json && tsc --noEmit -p ./src/webview/tsconfig.json && tsc --noEmit -p ./test/integration/tsconfig.json",
+    "lint": "eslint . --ext ts,tsx",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:integration": "node ./scripts/esbuild.mjs && node ./scripts/build-integration.mjs && vscode-test",
+    "package": "vsce package --no-dependencies",
+    "vscode:prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^2.27.0",
+    "esbuild": "^0.21.5",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "mocha": "^10.4.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.3.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
+    "@vscode/ripgrep": "^1.18.0",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.5",
+    "openai": "^6.45.0"
+  }
+}

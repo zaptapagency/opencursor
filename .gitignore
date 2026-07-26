@@ -1,0 +1,29 @@
+# --- VS Code extension (opencursor) ---
+node_modules/
+dist/
+media/webview/
+.vscode-test/
+*.vsix
+test/integration/**/*.test.js
+test/integration/**/*.test.js.map
+*.log
+.DS_Store
+
+# --- Local Claude Code settings (personal, not shared) ---
+.claude/settings.local.json
+
+# --- web/ SaaS app (Next.js) ---
+web/.next/
+web/out/
+web/build/
+web/next-env.d.ts
+web/.turbo/
+web/coverage/
+web/playwright-report/
+web/test-results/
+
+# Environment files — never commit secrets. Only *.example is tracked.
+.env
+.env.*
+!.env.example
+!**/.env.example

@@ -1,0 +1,9 @@
+{
+  "name": "opencursor-sample",
+  "version": "1.0.0",
+  "description": "A tiny sample project for exercising opencursor features.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
