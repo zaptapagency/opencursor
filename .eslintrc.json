@@ -22,7 +22,8 @@
     "media/webview",
     "node_modules",
     "*.mjs",
-    ".vscode-test"
+    ".vscode-test",
+    "web/**"
   ],
   "rules": {
     "@typescript-eslint/no-unused-vars": [

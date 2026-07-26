@@ -1,0 +1,205 @@
+// opencursor Cloud — data model.
+//
+// Multi-tenant from day one (charter §3): User -> Membership(role) ->
+// Organization. Every tenant-scoped row hangs off `organizationId`, and every
+// tenant-scoped query MUST filter by it. Billing, licensing, and usage are all
+// organization-scoped; a solo developer simply owns a personal organization.
+//
+// Phase A scaffolds the full schema so later phases are additive migrations,
+// never rewrites. The auth models (User/Account/Session/VerificationToken) are
+// the canonical @auth/prisma-adapter shapes, wired up in Phase B.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth.js (NextAuth v5) adapter models
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Product flags.
+  isAdmin    Boolean @default(false)
+  usageOptIn Boolean @default(false)
+
+  accounts    Account[]
+  sessions    Session[]
+  memberships Membership[]
+  usageEvents UsageEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy
+// ---------------------------------------------------------------------------
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Organization {
+  id   String @id @default(cuid())
+  // Opaque, URL-safe identifier used in routes instead of the raw id.
+  slug String @unique
+  name String
+
+  memberships  Membership[]
+  licenses     License[]
+  subscription Subscription?
+  usageEvents  UsageEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Membership {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MembershipRole @default(MEMBER)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// ---------------------------------------------------------------------------
+// Licensing (wired up in Phase C)
+// ---------------------------------------------------------------------------
+
+enum LicenseStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model License {
+  id             String        @id @default(cuid())
+  organizationId String
+  // Only the HMAC-SHA256(rawKey, LICENSE_KEY_PEPPER) is stored — never the raw
+  // key. The raw key is shown to the user exactly once at creation.
+  keyHash        String        @unique
+  // Short, non-secret prefix (e.g. "oc_live_ab12") for display/identification.
+  keyPrefix      String
+  status         LicenseStatus @default(ACTIVE)
+
+  createdAt       DateTime  @default(now())
+  lastValidatedAt DateTime?
+  expiresAt       DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Billing (wired up in Phase D). DB is the source of truth for entitlements;
+// Stripe webhooks write here, the app reads from here.
+// ---------------------------------------------------------------------------
+
+model Subscription {
+  id                 String  @id @default(cuid())
+  organizationId     String  @unique
+  stripeCustomerId   String
+  stripeSubscriptionId String @unique
+  stripePriceId      String
+  // Raw Stripe subscription status string (active, past_due, canceled, ...).
+  status             String
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stripeCustomerId])
+}
+
+// Idempotency ledger for Stripe webhooks — a handler checks this table by the
+// Stripe event id before acting, so redelivered events are no-ops.
+model ProcessedStripeEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Telemetry (opt-in, minimal — never code/file/prompt content)
+// ---------------------------------------------------------------------------
+
+model UsageEvent {
+  id             String  @id @default(cuid())
+  organizationId String?
+  userId         String?
+  licenseKeyHash String?
+  event          String
+  meta           Json?
+
+  createdAt DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([event, createdAt])
+  @@index([organizationId, createdAt])
+}

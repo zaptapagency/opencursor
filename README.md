@@ -4,6 +4,14 @@ An AI coding agent for VS Code — chat, context mentions, inline edit, an
 agentic tool-use loop, and local codebase retrieval — packaged as an
 installable extension. Reproduces the core daily-use features of Cursor.
 
+> **Monorepo note.** This repository contains two independently-deployable
+> artifacts:
+>
+> - **the extension** (repo root) — ships as a `.vsix`, built with npm.
+> - **[`web/`](web/)** — **opencursor Cloud**, the companion SaaS platform
+>   (accounts, licensing, billing, admin). A standalone Next.js 15 app built
+>   with pnpm and deployed on Railway. See [`web/README.md`](web/README.md).
+
 ## Features
 
 - **AI chat panel** — streaming responses in a sidebar webview, Markdown +
