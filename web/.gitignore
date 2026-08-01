@@ -1,0 +1,27 @@
+# Next.js
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Build outputs
+.turbo/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated TypeScript build info
+*.tsbuildinfo
