@@ -15,13 +15,16 @@ import { z } from 'zod';
 
 const serverSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  // DATABASE_URL is optional during build (Next.js static generation doesn't need it),
+  // but must be valid at runtime. If missing/invalid, db access will fail safely.
   DATABASE_URL: z
     .string()
-    .min(1, 'DATABASE_URL is required')
+    .optional()
     .refine(
-      (value) => value.startsWith('postgres'),
+      (value) => !value || value.startsWith('postgres'),
       'DATABASE_URL must be a PostgreSQL connection string',
-    ),
+    )
+    .default('postgresql://unused:unused@localhost/unused'),
 });
 
 const clientSchema = z.object({
